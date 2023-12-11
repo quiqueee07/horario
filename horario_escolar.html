@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+    <title>Horario Escolar</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+        }
+
+        .schedule-table {
+            width: 100%;
+            text-align: center;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid #dedede;
+            padding: 10px;
+        }
+
+        .schedule-table th {
+            background-color: #ffa500;
+            color: white;
+        }
+
+        .schedule-table td {
+            background-color: #ffffff;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            transition-duration: 0.4s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+
+            h1, #classForm, #deleteForm, #clearSchedule, #printButton {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Horario Escolar</h1>
+
+    <form id="classForm">
+    <input type="text" id="subject" placeholder="Nombre de la Materia" required>
+    <input type="text" id="professor" placeholder="Nombre del Profesor" required>
+    <input type="text" id="time" placeholder="Horario de Clases" required>
+    <select id="day" multiple required>
+        <option value="Lunes">Lunes</option>
+        <option value="Martes">Martes</option>
+        <option value="Miércoles">Miércoles</option>
+        <option value="Jueves">Jueves</option>
+        <option value="Viernes">Viernes</option>
+        <option value="Sábado">Sábado</option>
+    </select>
+    <button type="submit">Agregar Clase</button>
+    </form>
+
+    <form id="deleteForm">
+    <input type="text" id="deleteSubject" placeholder="Nombre de la Materia para borrar" required>
+    <button type="submit">Borrar Materia</button>
+    </form>
+    <button id="clearSchedule">Limpiar Horario</button>
+    <button id="printButton">Imprimir Horario</button>
+
+    <table class="schedule-table">
+    <tr>
+        <th>Horario</th>
+        <th>Lunes</th>
+        <th>Martes</th>
+        <th>Miércoles</th>
+        <th>Jueves</th>
+        <th>Viernes</th>
+        <th>Sábado</th>
+    </tr>
+    <tbody id="scheduleBody">
+        <!-- Aquí se insertarán los datos del horario -->
+    </tbody>
+    </table>
+
+    <script>
+    document.getElementById('classForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var subject = document.getElementById('subject').value;
+        var professor = document.getElementById('professor').value;
+        var time = document.getElementById('time').value;
+        var days = Array.from(document.getElementById('day').selectedOptions).map(o => o.value);
+
+        var schedule = JSON.parse(localStorage.getItem('schedule')) || [];
+
+        var existingClass = schedule.find(c => c.subject === subject && c.professor === professor && c.time === time);
+
+        if (existingClass) {
+            for (var day of days) {
+                if (!existingClass.days.includes(day)) {
+                    existingClass.days.push(day);
+                }
+            }
+        } else {
+            schedule.push({ subject: subject, professor: professor, time: time, days: days });
+        }
+
+        localStorage.setItem('schedule', JSON.stringify(schedule));
+
+        location.reload();
+    });
+
+    document.getElementById('deleteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        var deleteSubject = document.getElementById('deleteSubject').value;
+        var schedule = JSON.parse(localStorage.getItem('schedule')) || [];
+        schedule = schedule.filter(c => c.subject !== deleteSubject);
+        localStorage.setItem('schedule', JSON.stringify(schedule));
+
+        location.reload();
+    });
+
+    document.getElementById('clearSchedule').addEventListener('click', function(e) {
+        localStorage.removeItem('schedule');
+        location.reload();
+    });
+
+    document.getElementById('printButton').addEventListener('click', function() {
+        window.print();
+    });
+
+    window.addEventListener('load', function() {
+        var schedule = JSON.parse(localStorage.getItem('schedule')) || [];
+
+        // Ordenar el arreglo 'schedule' por hora de menor a mayor
+        schedule.sort(function(a, b) {
+            var timeA = parseInt(a.time.split(':')[0]);
+            var timeB = parseInt(b.time.split(':')[0]);
+            return timeA - timeB;
+        });
+
+        for (var timeIndex = 0; timeIndex < schedule.length; timeIndex++) {
+            var row = document.createElement('tr');
+            row.innerHTML = '<td>' + schedule[timeIndex].time + '</td>';
+
+            var daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            for (var dayIndex = 0; dayIndex < daysOfWeek.length; dayIndex++) {
+                var cell = document.createElement('td');
+                if (schedule[timeIndex].days.includes(daysOfWeek[dayIndex])) {
+                    cell.textContent = schedule[timeIndex].subject + ' - ' + schedule[timeIndex].professor;
+                }
+                row.appendChild(cell);
+            }
+            document.getElementById('scheduleBody').appendChild(row);
+        }
+    });
+    </script>
+</body>
+</html>
